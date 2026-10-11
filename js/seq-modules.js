@@ -26,15 +26,16 @@
     /* mano: palma por detrás del mango, dedos que lo rodean y antebrazo (manga según el contexto) */
     function buildHand(opt) {
       var g = new THREE.Group(), arms = new THREE.Group(); g.add(arms);
-      var palm = new THREE.Mesh(rbox(0.62, opt.palmH, 0.3, 0.14, 0.05), skin); palm.position.set(0, opt.y, -0.4); g.add(palm);
-      opt.fingers.forEach(function (fy) {
-        var f = new THREE.Mesh(new THREE.TorusGeometry(0.375, 0.075, 10, 28, 3.9), skin); f.rotation.x = Math.PI / 2; f.rotation.z = opt.start; f.position.y = fy; g.add(f);
+      /* palma ilustrada por detrás del mango (sin pulgar: el pulgar se dibuja aparte) y los dedos plegados al frente */
+      var palm = X.handSprite({ skip: ["thumb"] }, 0.0019); palm.position.set(opt.sg * -0.2, opt.y - 0.32, -0.5); palm.rotation.z = opt.sg * -0.72; palm.scale.x *= -opt.sg; g.add(palm);
+      opt.fingers.forEach(function (fy, i) {
+        var f = X.bandSprite(0.78, 0.15); f.position.set(opt.sg * 0.0, fy, 0.38); f.rotation.z = opt.sg * 0.06 * (i - 1); g.add(f);
       });
       X.makeArm(V(0, opt.y - 0.07, -0.62), opt.arm, arms);
       return { group: g, arms: arms };
     }
-    var rightHand = buildHand({ y: 1.12, palmH: 0.62, fingers: [0.92, 1.06, 1.2, 1.34], start: 0.75, arm: V(-0.42, -0.5, -0.76) });
-    var leftHand = buildHand({ y: 0.55, palmH: 0.5, fingers: [0.38, 0.52, 0.66], start: Math.PI - 4.65, arm: V(0.42, -0.5, -0.76) });
+    var rightHand = buildHand({ sg: 1, y: 1.12, fingers: [0.92, 1.06, 1.2, 1.34], arm: V(-0.42, -0.5, -0.76) });
+    var leftHand = buildHand({ sg: -1, y: 0.55, fingers: [0.38, 0.52, 0.66], arm: V(0.42, -0.5, -0.76) });
     var hands = new THREE.Group(); hands.add(rightHand.group); hands.add(leftHand.group); torch.add(hands);
     /* pulgar: gira alrededor de su base y baja sobre el interruptor */
     var thumbBase = V(-0.14, 1.5, -0.28), swTop = V(0.42, 1.76, 0.02), u0 = swTop.clone().sub(thumbBase).normalize();
@@ -198,15 +199,15 @@
 
     /* manos: dos palmas a los lados, cuatro puntas de dedos asomando por el borde opuesto y dos pulgares que se estiran hasta la tecla */
     function scr(px, py) { return V((px / 256 - 0.5) * 1.04, (0.5 - py / 548) * 2.22, 0); }
-    function buildHand(sg, tipsY) {
+    function buildHand(sg) {
       var h = new THREE.Group(), arms = new THREE.Group(); h.add(arms);
-      var palm = new THREE.Mesh(rbox(0.5, 0.92, 0.36, 0.14, 0.05), skin); palm.position.set(sg * 0.78, -0.6, -0.28); h.add(palm);
-      tipsY.forEach(function (y) { var f = new THREE.Mesh(new THREE.SphereGeometry(0.095, 12, 10), skin); f.position.set(-sg * 0.64, y, -0.03); h.add(f); });
+      /* mano ilustrada (sin pulgar) que sujeta el costado del teléfono: la palma queda fuera y los dedos tocan el borde de la pantalla */
+      var hand = X.handSprite({ skip: ["thumb"] }, 0.0023); hand.position.set(sg * 0.88, -1.72, 0.16); hand.rotation.z = sg * 0.22; hand.scale.x *= -sg; h.add(hand);
       X.makeArm(V(sg * 0.9, -1.1, -0.34), V(sg * 0.3, -1, 0.9), arms);
       var th = X.digit(0.095); h.add(th);
       return { group: h, arms: arms, thumb: th, base: V(sg * 0.7, -0.82, 0.02), rest: V(sg * 0.36, -0.96, 0.42), sg: sg, tip: V(0, 0, 0), dy: 0 };
     }
-    var HL = buildHand(-1, [-0.28, -0.55, -0.82]), HR = buildHand(1, [-0.15, -0.42, -0.69]);
+    var HL = buildHand(-1), HR = buildHand(1);
     var hands = new THREE.Group(); hands.add(HL.group); hands.add(HR.group); root.add(hands);
     function driveThumb(H, id, ta, active) {
       var T = SCRIPTS[id].taps, k = -1, i, want = V(H.rest.x, H.rest.y, H.rest.z), z = H.rest.z, a = 0, dyT = 0;
@@ -269,13 +270,13 @@
 
     /* mano derecha: pulgar e índice en pinza sobre la perilla (se mueve con ella) · mano izquierda: sostiene el costado izquierdo de la radio */
     var rh = new THREE.Group(), rarms = new THREE.Group(); rh.add(rarms);
-    var rpalm = new THREE.Mesh(rbox(0.5, 0.82, 0.4, 0.14, 0.05), skin); rpalm.position.set(1.4, -0.35, 0.9); rh.add(rpalm);
+    /* mano ilustrada con los dedos recogidos (el pulgar y el índice son los dedos que giran la perilla) */
+    var rpalm = X.handSprite({ skip: ["thumb", "index"], curl: true }, 0.0028); rpalm.position.set(1.66, -0.7, 0.9); rpalm.rotation.z = 0.7; rh.add(rpalm);
     X.makeArm(V(1.55, -0.4, 1.0), V(0.5, -0.4, 1.0), rarms);
     var dThumb = X.digit(0.1), dIndex = X.digit(0.09); rh.add(dThumb); rh.add(dIndex);
     var tbase = V(1.3, -0.82, 0.9), ibase = V(1.35, -0.02, 0.95), tp = V(0, 0, 0), ip = V(0, 0, 0);
     var lh = new THREE.Group(), larms = new THREE.Group(); lh.add(larms);
-    var lpalm = new THREE.Mesh(rbox(0.55, 1.0, 0.6, 0.16, 0.05), skin); lpalm.position.set(-1.78, -0.1, 0.02); lh.add(lpalm);
-    [-0.45, -0.2, 0.05, 0.3].forEach(function (y) { var f = X.digit(0.085); X.aim(f, V(-1.9, y, 0.4), V(-1.4, y, 0.6)); lh.add(f); });
+    var lpalm = X.handSprite({ skip: ["thumb"] }, 0.0024); lpalm.position.set(-2.2, -0.1, 0.7); lpalm.rotation.z = -Math.PI / 2; lpalm.scale.x *= -1; lh.add(lpalm);
     X.makeArm(V(-1.9, -0.5, 0.05), V(-0.7, -0.6, 0.9), larms);
     var hands = new THREE.Group(); hands.add(rh); hands.add(lh); root.add(hands);
     /* en el plano completo: el puño que agarra el asa (la radio cuelga de la mano) */

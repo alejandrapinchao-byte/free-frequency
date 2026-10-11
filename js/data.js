@@ -37,7 +37,7 @@ window.FF = {
       bye: "Gracias por recorrer el teléfono. Ninguna de estas opciones garantiza la comunicación: dependen de que haya red disponible.",
       objects: [
         {
-          id: "sms", name: "Mensajes SMS", label: "SMS",
+          id: "sms", name: "Mensajes SMS", label: "SMS", sms: true,
           what: "Un SMS usa la red celular, no internet, y puede salir cuando una llamada no entra. Los mensajes de WhatsApp y similares sí necesitan datos o internet.",
           net: { internet: [0, "No la necesita para SMS"], cellular: [1, "Sí: necesita cobertura celular"] },
           limit: "Que el mensaje salga no garantiza que llegue ni que lo lean; con la red congestionada puede demorar.",
@@ -115,6 +115,27 @@ window.FF = {
         }
       ]
     }
+  },
+
+  /* Práctica de escritura del SMS (js/smspad.js): teclado en pantalla y teclado del computador. Simulación: no envía nada. */
+  sms: {
+    title: "Escribe tu mensaje",
+    hint: "Toca las teclas o, en computador, escribe con tu teclado. Enter envía y Retroceso borra.",
+    to: "Para: Familia",
+    placeholder: "Escribe un mensaje corto…",
+    suggestLabel: "Sugerencias",
+    suggestions: ["Estoy bien", "Estamos a salvo", "Estoy en un lugar seguro"],
+    max: 60,
+    empty: "Escribe primero un mensaje corto.",
+    typed: "Mensaje en el campo: ",
+    deleted: "Borrado.",
+    cleared: "Campo vacío.",
+    sending: "Enviando…",
+    sent: "Enviado · red celular, sin internet",
+    sentSay: "Mensaje enviado en la simulación. Que salga no garantiza que llegue.",
+    again: "Ya enviaste este mensaje: espera sin reenviarlo, así no saturas la red.",
+    note: "Simulación: no se envía nada real. En la vida real, el SMS necesita cobertura celular y no hay garantía de que llegue.",
+    reset: "Reiniciar práctica"
   },
 
   /* Sintonizador ilustrativo de la radio (no usa frecuencias ni emisoras reales). pos = posición en el dial (0–100). */

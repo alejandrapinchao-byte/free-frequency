@@ -20,6 +20,7 @@ Se recomienda usar el servidor: abrir `index.html` con doble clic puede funciona
   4. **Cuadro educativo**: cómo ayuda, cómo usarlo en el contexto elegido, qué conexión necesita (si aplica), condiciones y límites, y los controles interactivos.
   - Contexto: el cuadro tiene un selector «Zona rural · Mateo» / «Zona urbana · Valeria». Cambiarlo repite el acercamiento con el otro personaje y muestra la explicación de uso de ese contexto.
   - Teléfono (4 temas, con chips en el cuadro): Mensajes SMS (las manos escriben un SMS en el teclado simulado), Llamadas breves, Búsqueda de cobertura y Modo avión (el pulgar activa el interruptor de la pantalla; el cuadro tiene un interruptor que cambia la pantalla).
+  - **Práctica de escritura del SMS** (`js/smspad.js`, textos en `FF.sms`): en el cuadro del tema SMS hay un teléfono simulado con campo de mensaje y teclado. Las teclas se animan al tocarlas o hacer clic (y también cuando se pulsan en el teclado del computador: letras, **Retroceso** para borrar, **Enter** para enviar). «Enviar» deja el mensaje en la conversación simulada; hay sugerencias («Estoy bien», …) que se escriben solas y un botón para reiniciar. No envía nada real.
   - Radio: una mano sostiene la radio y la otra gira las perillas (enciende y recorre el dial); el cuadro incluye el sintonizador interactivo (`js/tuner.js`), ilustrativo, sin audio ni frecuencias reales.
   - Linterna: el pulgar pulsa el interruptor y la luz ilumina el entorno oscuro y sus obstáculos; el cuadro y el interruptor sobre el modelo encienden y apagan la luz.
   - Control del usuario: la primera vez se ve la secuencia completa; al volver se muestra directo el plano completo con el cuadro. «Repetir el acercamiento» repite la etapa 2, «Repetir secuencia» o los pasos de la barra de progreso permiten volver a cualquier etapa, «Saltar introducción» va al cuadro. Nada cambia de pantalla por sí solo: solo «Finalizar recorrido» muestra la despedida con regreso al menú.
@@ -46,7 +47,7 @@ Hay un único cuadro informativo (texto HTML real, accesible) que muestra el nom
 
 ## Personajes y límites reales
 - El personaje completo es la ilustración de referencia (imagen plana sobre un plano 3D): no tiene esqueleto, parpadeo ni mirada; se mueve el cuerpo entero (respiración, balanceo al explicar).
-- Las manos y los antebrazos del primer plano son geometría 3D sencilla y estilizada (palma, dedos, pulgar elástico, manga de cuadros o manga floral con brazalete según el contexto). En el plano completo se ve la mano que sostiene el objeto a la altura de la muñeca de la ilustración; en el teléfono y la radio no se simula un brazo alzado ni llevarse el teléfono al oído.
+- Las manos del primer plano usan la ilustración plana de referencia (color liso, borde sombreado a la derecha y líneas de la palma), dibujada en un canvas con el tono de piel del contexto (`handSprite` en `js/sequence.js`). Los pulgares que tocan la pantalla o giran la perilla y los antebrazos (manga de cuadros o manga floral con brazalete según el contexto) siguen siendo geometría 3D sencilla. En el plano completo se ve la mano que sostiene el objeto a la altura de la muñeca de la ilustración; en el teléfono y la radio no se simula un brazo alzado ni llevarse el teléfono al oído.
 - La luz de la linterna es un foco sencillo sin sombras.
 
 ## Rutas

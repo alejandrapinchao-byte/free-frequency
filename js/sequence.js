@@ -49,7 +49,7 @@ window.FFSeq = (function () {
     var canvas = $(".seq-canvas"), statusEl = $("#seq-status"), skipBtn = $(".seq-skip"), hot = $(".seq-hot"), card = $(".seq-card"), bye = $(".seq-bye");
     var stepLis = [].slice.call(root.querySelectorAll(".seq-steps li"));
     var alive = true, live = { light: false, airplane: false, kick: -1e9 }, shown = { card: false, stage: 0 };
-    var unmountTuner = null;
+    var unmountTuner = null, unmountSms = null;
 
     function topic() { return topics.filter(function (o) { return o.id === topicId; })[0] || topics[0]; }
     function say(m) { statusEl.textContent = m; }
@@ -69,6 +69,7 @@ window.FFSeq = (function () {
       var h = "";
       if (o.toggle) h += '<button type="button" class="seq-toggle" data-act="light" role="switch" aria-checked="' + live.light + '"><span class="knob" aria-hidden="true"></span><span class="lbl">' + (live.light ? "Apagar la linterna" : "Encender la linterna") + "</span></button>";
       if (o.airplane) h += '<button type="button" class="seq-toggle" data-act="air" role="switch" aria-checked="' + live.airplane + '"><span class="knob" aria-hidden="true"></span><span class="lbl">' + (live.airplane ? "Desactivar el modo avión" : "Activar el modo avión") + "</span></button>";
+      if (o.sms && window.FFSms) h += window.FFSms.html();
       if (o.tuner) {
         var D = window.FF.tuner;
         h += '<section class="seq-tuner tuner" data-tuner><h3>' + esc(D.title) + "</h3>" +
@@ -100,6 +101,8 @@ window.FFSeq = (function () {
       card.setAttribute("aria-labelledby", "seq-title");
       if (unmountTuner) { unmountTuner(); unmountTuner = null; }
       if (o.tuner && window.FFTuner) unmountTuner = window.FFTuner.mount(card);
+      if (unmountSms) { unmountSms(); unmountSms = null; }
+      if (o.sms && window.FFSms) unmountSms = window.FFSms.mount(card);
       if (focusAct) { var f = card.querySelector('[data-act="' + focusAct.act + '"]' + (focusAct.v ? '[data-v="' + focusAct.v + '"]' : "")); if (f) f.focus({ preventScroll: true }); }
     }
 
@@ -192,6 +195,71 @@ window.FFSeq = (function () {
       u.tip.position.copy(b); u.base.position.copy(a);
     }
 
+    /* manos ilustradas: mismo estilo plano de la ilustración de referencia (color liso, borde sombreado a la derecha y líneas de la palma).
+       Se dibujan en un canvas con el tono de piel del contexto y se pegan en un plano 3D (origen del plano = la muñeca, eje y = hacia los dedos).
+       opt.skip: partes que no se dibujan ("thumb", "index", "middle", "ring", "pinky"); opt.curl: dedos recogidos (puño).
+       Coordenadas de dibujo = las de la ilustración original (recorte de 375 × 545 px). */
+    var HAND = { x: 300, y: 55, w: 375, h: 545, s: 1.4, wx: 220, wy: 485 }, handSets = {}, handGeo = null;
+    var FINGERS = {
+      thumb: { tip: [338, 250], base: [415, 365], w: 58, bend: [352, 322] },
+      pinky: { tip: [638, 232], base: [610, 330], w: 50 }, ring: { tip: [592, 152], base: [578, 322], w: 56 },
+      middle: { tip: [516, 100], base: [516, 322], w: 60 }, index: { tip: [440, 132], base: [462, 322], w: 64 }
+    };
+    function tone(hex, k) { return "#" + new THREE.Color(hex).multiplyScalar(k).getHexString(); }
+    function paintHand(set, hex) {
+      var g = set.cv.getContext("2d"), base = tone(hex, 1), shade = tone(hex, 0.82), crease = tone(hex, 0.7), opt = set.opt, skip = opt.skip || [];
+      g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, set.cv.width, set.cv.height);
+      g.setTransform(HAND.s, 0, 0, HAND.s, -HAND.x * HAND.s, -HAND.y * HAND.s); g.lineCap = g.lineJoin = "round";
+      function pass(draw) { g.save(); g.fillStyle = g.strokeStyle = shade; draw(); g.restore(); g.save(); g.translate(-9, 0); g.fillStyle = g.strokeStyle = base; draw(); g.restore(); }
+      ["thumb", "pinky", "ring", "middle", "index"].forEach(function (n) {
+        if (skip.indexOf(n) >= 0) return;
+        var f = FINGERS[n], tx = f.tip[0], ty = f.tip[1];
+        if (opt.curl) { tx = f.base[0] + (tx - f.base[0]) * 0.35; ty = f.base[1] + (ty - f.base[1]) * 0.42; }
+        pass(function () { g.lineWidth = f.w; g.beginPath(); g.moveTo(tx, ty); if (f.bend && !opt.curl) g.quadraticCurveTo(f.bend[0], f.bend[1], f.base[0], f.base[1]); else g.lineTo(f.base[0], f.base[1]); g.stroke(); });
+      });
+      pass(function () {   // palma y antebrazo corto
+        g.beginPath(); g.moveTo(398, 334); g.bezierCurveTo(430, 310, 462, 300, 488, 298); g.lineTo(640, 322); g.bezierCurveTo(650, 380, 646, 450, 626, 496);
+        g.bezierCurveTo(614, 520, 604, 528, 600, 534); g.lineTo(606, 600); g.lineTo(456, 600); g.lineTo(442, 534);
+        g.bezierCurveTo(402, 502, 372, 470, 350, 402); g.bezierCurveTo(338, 366, 356, 342, 398, 334); g.closePath(); g.fill();
+      });
+      g.strokeStyle = crease; g.lineWidth = 5.5;
+      g.beginPath(); g.moveTo(412, 336); g.bezierCurveTo(462, 352, 506, 412, 496, 478); g.bezierCurveTo(493, 494, 486, 504, 478, 510); g.stroke();
+      g.beginPath(); g.moveTo(486, 306); g.bezierCurveTo(500, 340, 560, 366, 632, 362); g.stroke();
+      g.beginPath(); g.moveTo(490, 552); g.bezierCurveTo(525, 548, 565, 542, 598, 526); g.stroke();
+      set.tx.needsUpdate = true;
+    }
+    function handSprite(opt, u) {
+      opt = opt || {}; var key = (opt.skip || []).join("-") + (opt.curl ? "|c" : ""), set = handSets[key];
+      if (!set) {
+        var cv = document.createElement("canvas"); cv.width = Math.round(HAND.w * HAND.s); cv.height = Math.round(HAND.h * HAND.s);
+        var tx = new THREE.CanvasTexture(cv); tx.anisotropy = 4;
+        set = handSets[key] = { cv: cv, tx: tx, opt: opt, mat: toon(0xf4f4f4, { map: tx, alphaTest: 0.4, side: THREE.DoubleSide }) }; paintHand(set, skin.color.getHex());
+      }
+      if (!handGeo) { handGeo = new THREE.PlaneGeometry(HAND.w, HAND.h); handGeo.translate(-(HAND.wx - HAND.w / 2), HAND.wy - HAND.h / 2, 0); }
+      var m = new THREE.Mesh(handGeo, set.mat); m.scale.setScalar(u || 0.003); return m;
+    }
+    /* dedo plegado visto de frente (rodea un mango): cápsula con el borde sombreado abajo */
+    var bandSet = null;
+    function bandSprite(len, h) {
+      if (!bandSet) {
+        var cv = document.createElement("canvas"); cv.width = 256; cv.height = 64;
+        bandSet = { cv: cv, tx: new THREE.CanvasTexture(cv) }; bandSet.mat = toon(0xd2d2d2, { map: bandSet.tx, alphaTest: 0.4, side: THREE.DoubleSide }); paintBand(skin.color.getHex());
+      }
+      var m = new THREE.Mesh(new THREE.PlaneGeometry(len, h), bandSet.mat); return m;
+    }
+    function paintBand(hex) {
+      var g = bandSet.cv.getContext("2d"); g.clearRect(0, 0, 256, 64);
+      function cap(y, hh, c) { g.fillStyle = c; g.beginPath(); g.moveTo(hh / 2, y); g.lineTo(256 - hh / 2, y); g.arc(256 - hh / 2, y + hh / 2, hh / 2, -Math.PI / 2, Math.PI / 2); g.lineTo(hh / 2, y + hh); g.arc(hh / 2, y + hh / 2, hh / 2, Math.PI / 2, Math.PI * 1.5); g.fill(); }
+      cap(0, 64, tone(hex, 0.82)); cap(0, 52, tone(hex, 1));
+      g.strokeStyle = tone(hex, 0.7); g.lineWidth = 3; g.lineCap = "round"; g.beginPath(); g.moveTo(170, 16); g.lineTo(170, 36); g.stroke();
+      bandSet.tx.needsUpdate = true;
+    }
+    function repaintHands() {
+      var hex = skin.color.getHex();
+      Object.keys(handSets).forEach(function (k) { paintHand(handSets[k], hex); });
+      if (bandSet) paintBand(hex);
+    }
+
     /* entorno: suelo, fondo, personaje (aparece solo en el plano completo) */
     var env = new THREE.Group(); scene.add(env); var envMats = [];
     function envMat(m) { m.transparent = true; m.opacity = 0; envMats.push(m); return m; }
@@ -217,7 +285,7 @@ window.FFSeq = (function () {
     }
 
     /* módulo de la alternativa */
-    var ctx3d = { THREE: THREE, M: M, scene: scene, env: env, envMat: envMat, skin: skin, gold: gold, sleeveMat: sleeveMat, limb: limb, makeArm: makeArm, digit: digit, aim: aim, V: V, camera: camera,
+    var ctx3d = { THREE: THREE, M: M, scene: scene, env: env, envMat: envMat, skin: skin, gold: gold, sleeveMat: sleeveMat, limb: limb, makeArm: makeArm, digit: digit, aim: aim, handSprite: handSprite, bandSprite: bandSprite, V: V, camera: camera,
       toon: toon, basic: basic, rbox: rbox, canvasTex: canvasTex, reduce: reduce, charGroup: charGroup, charMat: charMat, root: root,
       setLight: function (v) { setLight(v); }, setAirplane: function (v) { setAirplane(v); } };
     var mod = modules[J.module](ctx3d);
@@ -231,7 +299,7 @@ window.FFSeq = (function () {
     var C3 = CTX3D[ctxId], wristLocal = V(0, 0, 0);
     function applyContext() {
       C3 = CTX3D[ctxId]; wristLocal.set(C3.wrist[0], C3.wrist[1], C3.wrist[2]);
-      skin.color.setHex(C3.skin); skin.userData.base.setHex(C3.skin);
+      skin.color.setHex(C3.skin); skin.userData.base.setHex(C3.skin); repaintHands();
       sleeveMat.map = C3.sleeve === "plaid" ? plaid : floral; sleeveMat.needsUpdate = true;
       armVariants.plaid.forEach(function (m) { m.visible = C3.sleeve === "plaid"; }); armVariants.floral.forEach(function (m) { m.visible = C3.sleeve !== "plaid"; });
       bracelets.forEach(function (m) { m.visible = C3.bracelet; });
@@ -396,6 +464,7 @@ window.FFSeq = (function () {
     api.stop = function () {
       alive = false; cancelAnimationFrame(raf); if (ro) ro.disconnect(); else window.removeEventListener("resize", resize);
       if (unmountTuner) unmountTuner();
+      if (unmountSms) unmountSms();
       scene.traverse(function (o) { if (o.geometry) o.geometry.dispose(); if (o.material) { (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (mt) { if (mt.map) mt.map.dispose(); mt.dispose(); }); } });
       Object.keys(texCache).forEach(function (k) { texCache[k].dispose(); });
       renderer.dispose(); try { renderer.forceContextLoss(); } catch (e) {}
